@@ -318,6 +318,38 @@
           <div>
             <strong>チェック済み:</strong> <span id="checked-items">0</span>件
           </div>
+          <div>
+            <strong>進捗:</strong> <span id="progress-percentage">0%</span>
+          </div>
+        </div>
+
+        <div class="status-info" id="stats-info" style="display: none">
+          <div style="font-weight: bold; margin-bottom: 10px">📊 評価統計</div>
+          <div style="display: flex; gap: 20px; flex-wrap: wrap">
+            <div>
+              ✅ 正しい: <span id="correct-count">0</span>件 (<span
+                id="correct-percentage"
+                >0%</span
+              >)
+            </div>
+            <div>
+              ❌ 間違い: <span id="wrong-count">0</span>件 (<span
+                id="wrong-percentage"
+                >0%</span
+              >)
+            </div>
+            <div>
+              ⏭️ スキップ: <span id="skip-count">0</span>件 (<span
+                id="skip-percentage"
+                >0%</span
+              >)
+            </div>
+          </div>
+          <div style="margin-top: 10px">
+            <div>
+              🕐 最終評価: <span id="last-evaluation-time">未実施</span>
+            </div>
+          </div>
         </div>
 
         <div class="progress-text" id="progress-text">実験を準備中...</div>
@@ -388,6 +420,49 @@
         <div class="results-summary">
           <h2>✅ チェック完了!</h2>
           <p id="final-summary"></p>
+
+          <div class="status-info" style="margin: 20px 0">
+            <div style="font-weight: bold; margin-bottom: 15px">
+              📊 最終統計
+            </div>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+              "
+            >
+              <div>
+                <div style="font-weight: bold; color: #4caf50">✅ 正しい</div>
+                <div id="final-correct-count">0</div>
+                <div style="font-size: 0.9em; color: #666">
+                  (<span id="final-correct-percentage">0%</span>)
+                </div>
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #f44336">❌ 間違い</div>
+                <div id="final-wrong-count">0</div>
+                <div style="font-size: 0.9em; color: #666">
+                  (<span id="final-wrong-percentage">0%</span>)
+                </div>
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #ffc107">⏭️ スキップ</div>
+                <div id="final-skip-count">0</div>
+                <div style="font-size: 0.9em; color: #666">
+                  (<span id="final-skip-percentage">0%</span>)
+                </div>
+              </div>
+              <div>
+                <div style="font-weight: bold; color: #2196f3">📝 合計</div>
+                <div id="final-total-count">0</div>
+                <div style="font-size: 0.9em; color: #666">
+                  (<span id="final-total-percentage">0%</span>)
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button class="btn btn-save" onclick="downloadResults()">
             結果をダウンロード
           </button>
@@ -439,6 +514,98 @@
       // 実験データの保存
       function saveExperiments() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(experiments));
+      }
+
+      // 統計情報を計算
+      function calculateStats(results) {
+        const stats = {
+          correct: 0,
+          wrong: 0,
+          skip: 0,
+          total: results.length,
+        };
+
+        results.forEach((result) => {
+          if (result.evaluation === "correct") stats.correct++;
+          else if (result.evaluation === "wrong") stats.wrong++;
+          else if (result.evaluation === "skip") stats.skip++;
+        });
+
+        return {
+          ...stats,
+          correctPercentage:
+            stats.total > 0
+              ? ((stats.correct / stats.total) * 100).toFixed(1)
+              : 0,
+          wrongPercentage:
+            stats.total > 0
+              ? ((stats.wrong / stats.total) * 100).toFixed(1)
+              : 0,
+          skipPercentage:
+            stats.total > 0 ? ((stats.skip / stats.total) * 100).toFixed(1) : 0,
+          totalPercentage:
+            totalItems > 0 ? ((stats.total / totalItems) * 100).toFixed(1) : 0,
+        };
+      }
+
+      // 統計情報を表示
+      function updateStatsDisplay() {
+        const stats = calculateStats(results);
+
+        // 進捗情報
+        document.getElementById("progress-percentage").textContent =
+          stats.totalPercentage + "%";
+
+        // 統計情報の表示/非表示
+        const statsInfo = document.getElementById("stats-info");
+        if (stats.total > 0) {
+          statsInfo.style.display = "block";
+
+          // 各統計値を更新
+          document.getElementById("correct-count").textContent = stats.correct;
+          document.getElementById("correct-percentage").textContent =
+            stats.correctPercentage + "%";
+          document.getElementById("wrong-count").textContent = stats.wrong;
+          document.getElementById("wrong-percentage").textContent =
+            stats.wrongPercentage + "%";
+          document.getElementById("skip-count").textContent = stats.skip;
+          document.getElementById("skip-percentage").textContent =
+            stats.skipPercentage + "%";
+
+          // 最終評価時刻
+          if (results.length > 0) {
+            const lastResult = results[results.length - 1];
+            const lastTime = new Date(lastResult.timestamp).toLocaleString(
+              "ja-JP"
+            );
+            document.getElementById("last-evaluation-time").textContent =
+              lastTime;
+          }
+        } else {
+          statsInfo.style.display = "none";
+        }
+      }
+
+      // 最終統計を表示
+      function updateFinalStats() {
+        const stats = calculateStats(results);
+
+        document.getElementById("final-correct-count").textContent =
+          stats.correct + "件";
+        document.getElementById("final-correct-percentage").textContent =
+          stats.correctPercentage + "%";
+        document.getElementById("final-wrong-count").textContent =
+          stats.wrong + "件";
+        document.getElementById("final-wrong-percentage").textContent =
+          stats.wrongPercentage + "%";
+        document.getElementById("final-skip-count").textContent =
+          stats.skip + "件";
+        document.getElementById("final-skip-percentage").textContent =
+          stats.skipPercentage + "%";
+        document.getElementById("final-total-count").textContent =
+          stats.total + "件";
+        document.getElementById("final-total-percentage").textContent =
+          stats.totalPercentage + "%";
       }
 
       // 実験データの読み込み
@@ -496,6 +663,9 @@
           exp.checked_count;
         document.getElementById("start-input").value = currentIndex + 1;
         document.getElementById("seed-input").value = shuffleSeed;
+
+        // 統計情報を更新
+        updateStatsDisplay();
 
         // セクション切り替え
         document.getElementById("experiment-section").classList.add("hidden");
@@ -736,6 +906,9 @@
           saveExperiments();
         }
 
+        // 統計情報を更新
+        updateStatsDisplay();
+
         if (currentIndex < totalItems) {
           displayCurrentItem();
         } else {
@@ -780,6 +953,9 @@
 
         const summary = `実験「${currentExperiment}」で合計 ${results.length} 件を評価しました`;
         document.getElementById("final-summary").textContent = summary;
+
+        // 最終統計を更新
+        updateFinalStats();
       }
 
       // 結果をダウンロード
