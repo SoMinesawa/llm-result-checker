@@ -8,7 +8,7 @@ LLM の実験結果を効率的にチェックするための Web アプリケ�
 
 ```bash
 # リポジトリをクローン
-git clone https://github.com/yourusername/llm-result-checker.git
+git clone https://github.com/SoMinesawa/llm-result-checker.git
 cd llm-result-checker
 
 # test.jsonを同じフォルダに配置
