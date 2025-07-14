@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LLM実験結果チェッカー</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .experiment-section {
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .experiment-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+      }
+
+      .experiment-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+
+      .experiment-item {
+        background-color: #e8f5e8;
+        padding: 8px 12px;
+        border-radius: 5px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.3s;
+      }
+
+      .experiment-item:hover {
+        background-color: #d4edda;
+      }
+
+      .experiment-item.selected {
+        border-color: #4caf50;
+        background-color: #d4edda;
+      }
+
+      .experiment-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .experiment-input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .btn-small {
+        padding: 8px 16px;
+        font-size: 14px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .progress-bar {
+        width: 100%;
+        height: 20px;
+        background-color: #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+      }
+
+      .progress-fill {
+        height: 100%;
+        background-color: #4caf50;
+        transition: width 0.3s ease;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #333;
+      }
+
+      .item-container {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 20px;
+        background-color: #fafafa;
+      }
+
+      .section-title {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #333;
+        border-bottom: 2px solid #4caf50;
+        padding-bottom: 5px;
+      }
+
+      .object-caption {
+        background-color: #e8f5e8;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        border-left: 4px solid #4caf50;
+      }
+
+      .conversation {
+        margin-bottom: 15px;
+      }
+
+      .human-message {
+        background-color: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border-left: 4px solid #2196f3;
+      }
+
+      .gpt-message {
+        background-color: #fff3e0;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        border-left: 4px solid #ff9800;
+      }
+
+      .role-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .controls {
+        text-align: center;
+        margin-top: 30px;
+      }
+
+      .btn {
+        padding: 12px 25px;
+        margin: 0 10px;
+        font-size: 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .btn-correct {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .btn-correct:hover {
+        background-color: #45a049;
+      }
+
+      .btn-wrong {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .btn-wrong:hover {
+        background-color: #da190b;
+      }
+
+      .btn-skip {
+        background-color: #ffc107;
+        color: black;
+      }
+
+      .btn-skip:hover {
+        background-color: #e0a800;
+      }
+
+      .btn-save {
+        background-color: #2196f3;
+        color: white;
+      }
+
+      .btn-save:hover {
+        background-color: #0b7dda;
+      }
+
+      .btn-quit {
+        background-color: #9e9e9e;
+        color: white;
+      }
+
+      .btn-quit:hover {
+        background-color: #757575;
+      }
+
+      .btn-danger {
+        background-color: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background-color: #c82333;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .start-controls {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      .start-input {
+        padding: 10px;
+        font-size: 16px;
+        margin: 0 10px;
+        width: 100px;
+      }
+
+      .keyboard-hint {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .results-summary {
+        background-color: #e8f5e8;
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+        text-align: center;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        font-size: 18px;
+        color: #666;
+      }
+
+      .status-info {
+        background-color: #e3f2fd;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        border-left: 4px solid #2196f3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🤖 LLM実験結果チェッカー</h1>
+
+      <div id="loading-section" class="loading">
+        📂 test.json を読み込み中...
+      </div>
+
+      <div id="experiment-section" class="experiment-section hidden">
+        <div class="experiment-title">📋 実験管理</div>
+
+        <div class="experiment-list" id="experiment-list">
+          <!-- 実験一覧がここに表示される -->
+        </div>
+
+        <div class="experiment-controls">
+          <input
+            type="text"
+            id="new-experiment-name"
+            class="experiment-input"
+            placeholder="新しい実験名"
+          />
+          <button class="btn-small btn-correct" onclick="createExperiment()">
+            実験作成
+          </button>
+          <button class="btn-small btn-danger" onclick="deleteExperiment()">
+            選択した実験を削除
+          </button>
+        </div>
+      </div>
+
+      <div id="data-loaded-section" class="hidden">
+        <div class="status-info">
+          <div>
+            <strong>実験名:</strong> <span id="current-experiment-name"></span>
+          </div>
+          <div>
+            <strong>総データ数:</strong> <span id="total-items">0</span>件
+          </div>
+          <div>
+            <strong>チェック済み:</strong> <span id="checked-items">0</span>件
+          </div>
+        </div>
+
+        <div class="progress-text" id="progress-text">実験を準備中...</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="start-controls" id="start-controls">
+          <div style="margin-bottom: 10px">
+            <label for="seed-input">シード値:</label>
+            <input
+              type="number"
+              id="seed-input"
+              class="start-input"
+              value="12345"
+            />
+            <button class="btn btn-skip" onclick="reshuffle()">
+              再シャッフル
+            </button>
+          </div>
+          <div>
+            <label for="start-input"
+              >開始位置 (1-<span id="total-items-2">0</span>):</label
+            >
+            <input
+              type="number"
+              id="start-input"
+              class="start-input"
+              min="1"
+              value="1"
+            />
+            <button class="btn btn-correct" onclick="startChecking()">
+              開始
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="checker-section" class="hidden">
+        <div class="item-container" id="item-container">
+          <div class="section-title">📝 オブジェクトの説明</div>
+          <div id="object-captions"></div>
+
+          <div class="section-title">💬 会話</div>
+          <div id="conversations"></div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-correct" onclick="evaluate('correct')">
+            ✅ 正しい (C)
+          </button>
+          <button class="btn btn-wrong" onclick="evaluate('wrong')">
+            ❌ 間違い (W)
+          </button>
+          <button class="btn btn-skip" onclick="evaluate('skip')">
+            ⏭️ スキップ (S)
+          </button>
+          <button class="btn btn-save" onclick="saveResults()">💾 保存</button>
+          <button class="btn btn-quit" onclick="quit()">🚪 終了 (Q)</button>
+        </div>
+
+        <div class="keyboard-hint">
+          キーボードショートカット: C=正しい, W=間違い, S=スキップ, Q=終了
+        </div>
+      </div>
+
+      <div id="results-section" class="hidden">
+        <div class="results-summary">
+          <h2>✅ チェック完了!</h2>
+          <p id="final-summary"></p>
+          <button class="btn btn-save" onclick="downloadResults()">
+            結果をダウンロード
+          </button>
+          <button class="btn btn-correct" onclick="backToExperiments()">
+            実験選択に戻る
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let data = [];
+      let shuffledData = [];
+      let currentIndex = 0;
+      let results = [];
+      let totalItems = 0;
+      let shuffleSeed = 12345;
+      let currentExperiment = null;
+      let experiments = {};
+
+      // ローカルストレージのキー
+      const STORAGE_KEY = "llm_checker_experiments";
+
+      // シード固定の疑似乱数生成器
+      class SeededRandom {
+        constructor(seed) {
+          this.seed = seed;
+        }
+
+        next() {
+          this.seed = (this.seed * 9301 + 49297) % 233280;
+          return this.seed / 233280;
+        }
+      }
+
+      // Fisher-Yates shuffle with seeded random
+      function shuffleArray(array, seed) {
+        const shuffled = [...array];
+        const rng = new SeededRandom(seed);
+
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(rng.next() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+
+        return shuffled;
+      }
+
+      // 実験データの保存
+      function saveExperiments() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(experiments));
+      }
+
+      // 実験データの読み込み
+      function loadExperiments() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          experiments = JSON.parse(stored);
+        }
+      }
+
+      // 実験一覧の表示
+      function displayExperiments() {
+        const list = document.getElementById("experiment-list");
+        list.innerHTML = "";
+
+        Object.keys(experiments).forEach((expName) => {
+          const exp = experiments[expName];
+          const item = document.createElement("div");
+          item.className = "experiment-item";
+          item.textContent = `${expName} (${exp.checked_count}/${exp.total_items})`;
+          item.onclick = () => selectExperiment(expName);
+
+          if (currentExperiment === expName) {
+            item.classList.add("selected");
+          }
+
+          list.appendChild(item);
+        });
+      }
+
+      // 実験選択
+      function selectExperiment(expName) {
+        currentExperiment = expName;
+        displayExperiments();
+
+        const exp = experiments[expName];
+
+        // 実験データを復元
+        currentIndex = exp.current_index;
+        results = exp.results;
+        shuffleSeed = exp.shuffle_seed;
+
+        // シャッフルデータを復元
+        shuffledData = shuffleArray(data, shuffleSeed);
+        shuffledData.forEach((item, shuffledIndex) => {
+          const originalIndex = data.findIndex((d) => d === item);
+          item._originalIndex = originalIndex;
+          item._shuffledIndex = shuffledIndex;
+        });
+
+        // UI更新
+        document.getElementById("current-experiment-name").textContent =
+          expName;
+        document.getElementById("checked-items").textContent =
+          exp.checked_count;
+        document.getElementById("start-input").value = currentIndex + 1;
+        document.getElementById("seed-input").value = shuffleSeed;
+
+        // セクション切り替え
+        document.getElementById("experiment-section").classList.add("hidden");
+        document
+          .getElementById("data-loaded-section")
+          .classList.remove("hidden");
+
+        updateProgress();
+      }
+
+      // 実験作成
+      function createExperiment() {
+        const name = document
+          .getElementById("new-experiment-name")
+          .value.trim();
+        if (!name) {
+          alert("実験名を入力してください");
+          return;
+        }
+
+        if (experiments[name]) {
+          alert("同じ名前の実験が既に存在します");
+          return;
+        }
+
+        experiments[name] = {
+          created_at: new Date().toISOString(),
+          total_items: totalItems,
+          checked_count: 0,
+          current_index: 0,
+          shuffle_seed: 12345,
+          results: [],
+        };
+
+        saveExperiments();
+        displayExperiments();
+        document.getElementById("new-experiment-name").value = "";
+
+        alert(`実験「${name}」を作成しました`);
+      }
+
+      // 実験削除
+      function deleteExperiment() {
+        if (!currentExperiment) {
+          alert("削除する実験を選択してください");
+          return;
+        }
+
+        if (confirm(`実験「${currentExperiment}」を削除しますか？`)) {
+          delete experiments[currentExperiment];
+          saveExperiments();
+          currentExperiment = null;
+          displayExperiments();
+        }
+      }
+
+      // 実験選択に戻る
+      function backToExperiments() {
+        document.getElementById("results-section").classList.add("hidden");
+        document
+          .getElementById("experiment-section")
+          .classList.remove("hidden");
+        displayExperiments();
+      }
+
+      // 初期化
+      async function initialize() {
+        try {
+          const response = await fetch("test.json");
+          if (!response.ok) {
+            throw new Error("test.json が見つかりません");
+          }
+
+          data = await response.json();
+          totalItems = data.length;
+
+          document.getElementById("total-items").textContent = totalItems;
+          document.getElementById("total-items-2").textContent = totalItems;
+
+          // 実験データ読み込み
+          loadExperiments();
+
+          // UI切り替え
+          document.getElementById("loading-section").classList.add("hidden");
+          document
+            .getElementById("experiment-section")
+            .classList.remove("hidden");
+
+          displayExperiments();
+        } catch (error) {
+          document.getElementById(
+            "loading-section"
+          ).innerHTML = `❌ エラー: ${error.message}<br>test.json が同じフォルダにあることを確認してください`;
+        }
+      }
+
+      // 再シャッフル
+      function reshuffle() {
+        const newSeed = parseInt(document.getElementById("seed-input").value);
+        if (newSeed !== shuffleSeed) {
+          shuffleSeed = newSeed;
+          shuffledData = shuffleArray(data, shuffleSeed);
+
+          // オリジナルインデックスを保存
+          shuffledData.forEach((item, shuffledIndex) => {
+            const originalIndex = data.findIndex((d) => d === item);
+            item._originalIndex = originalIndex;
+            item._shuffledIndex = shuffledIndex;
+          });
+
+          // 実験データを更新
+          if (currentExperiment) {
+            experiments[currentExperiment].shuffle_seed = shuffleSeed;
+            saveExperiments();
+          }
+
+          alert(`シード値 ${newSeed} で再シャッフルしました`);
+        }
+      }
+
+      // チェック開始
+      function startChecking() {
+        const newSeed = parseInt(document.getElementById("seed-input").value);
+        if (newSeed !== shuffleSeed) {
+          reshuffle();
+        }
+
+        const startPos =
+          parseInt(document.getElementById("start-input").value) - 1;
+        if (startPos >= 0 && startPos < totalItems) {
+          currentIndex = startPos;
+
+          // 実験データを更新
+          if (currentExperiment) {
+            experiments[currentExperiment].current_index = currentIndex;
+            saveExperiments();
+          }
+
+          document
+            .getElementById("data-loaded-section")
+            .classList.add("hidden");
+          document.getElementById("checker-section").classList.remove("hidden");
+          displayCurrentItem();
+          updateProgress();
+        }
+      }
+
+      // 現在の項目を表示
+      function displayCurrentItem() {
+        if (currentIndex >= totalItems) {
+          showResults();
+          return;
+        }
+
+        const item = shuffledData[currentIndex];
+
+        // オブジェクトの説明を表示
+        const objectCaptions = document.getElementById("object-captions");
+        objectCaptions.innerHTML = "";
+
+        const captions = item.object_captions || {};
+        let captionIndex = 1;
+        for (const [objId, caption] of Object.entries(captions)) {
+          const captionDiv = document.createElement("div");
+          captionDiv.className = "object-caption";
+          captionDiv.textContent = `${captionIndex}. ${caption}`;
+          objectCaptions.appendChild(captionDiv);
+          captionIndex++;
+        }
+
+        // 会話を表示
+        const conversations = document.getElementById("conversations");
+        conversations.innerHTML = "";
+
+        const convs = item.conversations || [];
+        convs.forEach((conv) => {
+          const convDiv = document.createElement("div");
+          convDiv.className = "conversation";
+
+          const isHuman = conv.from === "human";
+          const messageDiv = document.createElement("div");
+          messageDiv.className = isHuman ? "human-message" : "gpt-message";
+
+          const roleLabel = document.createElement("div");
+          roleLabel.className = "role-label";
+          roleLabel.textContent = isHuman ? "👤 人間" : "🤖 GPT";
+
+          const messageText = document.createElement("div");
+          messageText.textContent = conv.value || "";
+
+          messageDiv.appendChild(roleLabel);
+          messageDiv.appendChild(messageText);
+          convDiv.appendChild(messageDiv);
+          conversations.appendChild(convDiv);
+        });
+
+        updateProgress();
+      }
+
+      // 進捗を更新
+      function updateProgress() {
+        const progress = ((currentIndex + 1) / totalItems) * 100;
+        document.getElementById("progress-fill").style.width = progress + "%";
+
+        let progressText = `項目 ${
+          currentIndex + 1
+        }/${totalItems} (${progress.toFixed(1)}%)`;
+        if (currentIndex < totalItems && shuffledData[currentIndex]) {
+          const originalIndex = shuffledData[currentIndex]._originalIndex + 1;
+          progressText += ` [元: ${originalIndex}]`;
+        }
+
+        document.getElementById("progress-text").textContent = progressText;
+      }
+
+      // 評価
+      function evaluate(evaluation) {
+        const item = shuffledData[currentIndex];
+        const result = {
+          index: currentIndex,
+          originalIndex: item._originalIndex,
+          shuffledIndex: item._shuffledIndex,
+          sample_id: item.metadata?.sample_id || "N/A",
+          evaluation: evaluation,
+          conversations: item.conversations || [],
+          object_captions: item.object_captions || {},
+          timestamp: new Date().toISOString(),
+        };
+
+        results.push(result);
+        currentIndex++;
+
+        // 実験データを更新
+        if (currentExperiment) {
+          experiments[currentExperiment].results = results;
+          experiments[currentExperiment].checked_count = results.length;
+          experiments[currentExperiment].current_index = currentIndex;
+          saveExperiments();
+        }
+
+        if (currentIndex < totalItems) {
+          displayCurrentItem();
+        } else {
+          showResults();
+        }
+      }
+
+      // 結果を保存
+      function saveResults() {
+        const resultsData = {
+          experiment_name: currentExperiment,
+          checked_items: results.length,
+          total_items: totalItems,
+          shuffle_seed: shuffleSeed,
+          results: results,
+        };
+
+        const blob = new Blob([JSON.stringify(resultsData, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${currentExperiment}_results.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        alert("結果を保存しました！");
+      }
+
+      // 終了
+      function quit() {
+        if (confirm("チェックを終了しますか？")) {
+          showResults();
+        }
+      }
+
+      // 結果を表示
+      function showResults() {
+        document.getElementById("checker-section").classList.add("hidden");
+        document.getElementById("results-section").classList.remove("hidden");
+
+        const summary = `実験「${currentExperiment}」で合計 ${results.length} 件を評価しました`;
+        document.getElementById("final-summary").textContent = summary;
+      }
+
+      // 結果をダウンロード
+      function downloadResults() {
+        saveResults();
+      }
+
+      // キーボードショートカット
+      document.addEventListener("keydown", function (e) {
+        if (
+          document
+            .getElementById("checker-section")
+            .classList.contains("hidden")
+        ) {
+          return;
+        }
+
+        switch (e.key.toLowerCase()) {
+          case "c":
+            evaluate("correct");
+            break;
+          case "w":
+            evaluate("wrong");
+            break;
+          case "s":
+            evaluate("skip");
+            break;
+          case "q":
+            quit();
+            break;
+        }
+      });
+
+      // アプリケーション開始
+      initialize();
+    </script>
+  </body>
+</html>
